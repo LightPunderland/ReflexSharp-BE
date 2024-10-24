@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Features.Audio.Entities;
 using System.Collections.Generic;
+using Features.Audio.Extension;
 using Data;
 
 namespace Features.Audio.Controllers
@@ -97,6 +98,18 @@ namespace Features.Audio.Controllers
             {
                 FileDownloadName = $"{audioFile.Name}.mp3"
             };
+        }
+
+        [HttpGet("{id}/size")]
+        public async Task<IActionResult> GetAudioFileSizeKB(int id) {
+            var audFile = await _context.AudioFiles.FindAsync(id);
+            if (audFile == null) {
+                return NotFound(new {message = "No such audio file exists(atleast not with that id"});
+            }
+
+            var fileSizeKB = audFile.GetAudioFileSize(); //extension metod:P
+
+            return Ok(new {fileSize = $"{fileSizeKB:F2} KB" });
         }
     }
 }

@@ -3,6 +3,8 @@ using Features.User.Entities;
 using Features.User.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 public class UserService : IUserService
 {
@@ -15,12 +17,10 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
     {
-
         var users = await _context.Users.ToListAsync();
-
         var userList = new UserList(users);
 
-        userList.Sort(new UserList.UserComparer());
+        userList.Sort();
 
         return userList.Select(user => new UserDTO
         {
@@ -33,7 +33,6 @@ public class UserService : IUserService
 
     public async Task<UserDTO?> GetUserAsync(Guid userID)
     {
-
         var user = await _context.Users.FindAsync(userID);
 
         if (user is null)
@@ -50,16 +49,15 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDTO>> GetUsersByRankAsync(Rank rank)
     {
-
         var users = await _context.Users.ToListAsync();
-
         var userList = new UserList(users);
 
         var filteredUsers = userList
             .Where(u => Enum.TryParse(u.Rank, out Rank userRank) && userRank == rank)
             .ToList();
 
-        filteredUsers.Sort(new UserList.UserComparer());
+
+        filteredUsers.Sort();
 
         return filteredUsers.Select(user => new UserDTO
         {
@@ -73,8 +71,8 @@ public class UserService : IUserService
     public async Task<bool> CheckUsernameAvailabilityAsync(string username)
     {
         var users = await _context.Users.ToListAsync();
-
         var userList = new UserList(users);
+
         return userList.All(u => u.Email != username);
     }
 }
