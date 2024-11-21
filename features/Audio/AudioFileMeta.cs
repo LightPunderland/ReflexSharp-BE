@@ -8,6 +8,4 @@ namespace Features.Audio.Extension {
             return (double)audioFile.FileData.Length / 1024;
         }
     }
-
-
 }

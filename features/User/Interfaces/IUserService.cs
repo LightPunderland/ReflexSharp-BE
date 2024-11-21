@@ -12,6 +12,7 @@ public interface IUserService
 
     // Working on this, doesn't do much for now
     Task<int> CheckXPRequiredForLevelUp(Guid userID);
+    Task<bool> CheckAndApplyRankUpAsync(Guid userId);
 
     Task<bool> UpdateUserGoldXp(Guid userId, int gold, int xp);
     Task<User?> ValidateUserAsync(string googleId, string email, string displayName);

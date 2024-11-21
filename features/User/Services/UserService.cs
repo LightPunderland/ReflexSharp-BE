@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Features.User.Exceptions;
 
 public class UserService : IUserService
 {
@@ -97,6 +98,57 @@ public class UserService : IUserService
         }
 
     }
+
+    public async Task<bool> CheckAndApplyRankUpAsync(Guid userId)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException(userId);
+            }
+
+            int requiredXP = await CheckXPRequiredForLevelUp(userId);
+
+            if (user.XP < requiredXP)
+            {
+                throw new InsufficientXPException(userId, user.XP, requiredXP);
+            }
+
+            user.XP -= requiredXP;
+            user.Rank = user.Rank + 1;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (UserNotFoundException ex)
+        {
+            using (StreamWriter writer = new StreamWriter("logs/user_errors.txt", true))
+            {
+                await writer.WriteLineAsync($"[{DateTime.Now}] User not found: {ex.Message}");
+            }
+            throw; // Re-throw to be handled by controller
+        }
+        catch (InsufficientXPException ex)
+        {
+            using (StreamWriter writer = new StreamWriter("logs/rankup_errors.txt", true))
+            {
+                await writer.WriteLineAsync($"[{DateTime.Now}] Insufficient XP: {ex.Message}");
+            }
+            throw; // Re-throw to be handled by controller
+        }
+        catch (Exception ex)
+        {
+            using (StreamWriter writer = new StreamWriter("logs/general_errors.txt", true))
+            {
+                await writer.WriteLineAsync($"[{DateTime.Now}] Unexpected error: {ex.Message}");
+            }
+            throw; // Re-throw unexpected exceptions
+        }
+    }
+
 
     public async Task<bool> UpdateUserGoldXp(Guid userId, int gold, int xp)
     {

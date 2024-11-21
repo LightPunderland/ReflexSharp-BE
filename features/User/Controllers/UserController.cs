@@ -1,5 +1,7 @@
+using System.IO;
 using Features.User.Entities;
 using Features.User.DTOs;
+using Features.User.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -69,6 +71,49 @@ public class UserController : ControllerBase
         }
 
         return NotFound();
+    }
+
+    [HttpPost("api/users/{userID}/check-rankup")]
+    public async Task<ActionResult> CheckUserRankUp(string userID)
+    {
+        try
+        {
+            if (!Guid.TryParse(userID, out Guid guid))
+            {
+                return BadRequest("Invalid user ID format");
+            }
+
+            bool rankUpSuccess = await _userService.CheckAndApplyRankUpAsync(guid);
+            return Ok(new { message = "Rank up successful!" });
+        }
+        catch (UserNotFoundException ex)
+        {
+            using (StreamWriter writer = new StreamWriter("logs/user_errors.txt", true))
+            {
+                await writer.WriteLineAsync($"[{DateTime.Now}] {ex.Message}");
+            }
+
+            return NotFound(new
+            {
+                message = ex.Message,
+                userId = ex.UserId
+            });
+        }
+        catch (InsufficientXPException ex)
+        {
+            using (StreamWriter writer = new StreamWriter("logs/rankup_errors.txt", true))
+            {
+                await writer.WriteLineAsync($"[{DateTime.Now}] {ex.Message}");
+            }
+
+            return BadRequest(new
+            {
+                message = "Insufficient XP for rank up",
+                currentXP = ex.CurrentXP,
+                requiredXP = ex.RequiredXP,
+                needed = ex.RequiredXP - ex.CurrentXP
+            });
+        }
     }
 
 
