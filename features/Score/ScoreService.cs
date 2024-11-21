@@ -6,31 +6,27 @@ using System.Collections.Concurrent;
 
 public class ScoreService : IScoreService
 {
+    private readonly IScoreRepository _scoreRepository;
     private readonly AppDbContext _context;
 
-    // Dictionary pakeistas į ConcurrentDictionary 
+    // Dictionary pakeistas į ConcurrentDictionary
     private readonly ConcurrentDictionary<string, object> _cache = new ConcurrentDictionary<string, object>();
 
-    public ScoreService(AppDbContext context)
+    public ScoreService(IScoreRepository scoreRepository, AppDbContext context)
     {
+        _scoreRepository = scoreRepository;
         _context = context;
     }
 
     public async Task<IEnumerable<ScoreEntity>> GetTopScoresAsync(int count = 5)
     {
-        return await _context.Scores
-            .OrderByDescending(s => s.Score)
-            .Take(count)
-            .ToListAsync();
+        return await _scoreRepository.GetTopScoresAsync(count);
     }
 
     public async Task<IEnumerable<ScoreEntity>> GetTopScoresbyUser(Guid guid, int count = 5)
     {
-        return await _context.Scores
-            .Where(s => s.UserId == guid)
-            .OrderByDescending(s => s.Score)
-            .Take(count)
-            .ToListAsync();
+        return await _scoreRepository.GetTopScoresByUserAsync(guid, count);
+
     }
 
     public async Task<ScoreEntity> CreateScoreAsync(Guid userId, int score)
@@ -41,7 +37,7 @@ public class ScoreService : IScoreService
             Score = score
         };
 
-        _context.Scores.Add(scoreEntity);
+        await _scoreRepository.AddAsync(scoreEntity);
         await _context.SaveChangesAsync();
 
         // Pakeičia sena average scora su updatintu
@@ -56,22 +52,23 @@ public class ScoreService : IScoreService
         return await _context.Users.AnyAsync(u => u.Id == userId);
     }
 
-    // Apskaičiuoja average scora 
+    // Apskaičiuoja average scora
     public async Task<double> CalculateAverageScoreAsync()
     {
         string cacheKey = "AverageScore";
 
-        
+
         if (_cache.TryGetValue(cacheKey, out var cachedValue))
         {
             return (double)cachedValue;
         }
 
-        
+
         var scores = await _context.Scores.ToListAsync();
 
         // Task.run sukuria nauja threada backgrounde (turėtų skaitytis kaip multithread)
-        double averageScore = await Task.Run(() => {
+        double averageScore = await Task.Run(() =>
+        {
             var scoreStats = new ScoreStatistics(0, 0);
             foreach (var score in scores)
             {
@@ -90,17 +87,16 @@ public class ScoreService : IScoreService
     {
         string cacheKey = $"AverageScore_{userId}";
 
-        
+
         if (_cache.TryGetValue(cacheKey, out var cachedValue))
         {
             return (double)cachedValue;
         }
 
-        var userScores = await _context.Scores
-            .Where(s => s.UserId == userId)
-            .ToListAsync();
+        var userScores = await _scoreRepository.GetScoresByUserAsync(userId);
 
-        double averageScore = await Task.Run(() => {
+        double averageScore = await Task.Run(() =>
+        {
             var scoreStats = new ScoreStatistics(0, 0);
             foreach (var score in userScores)
             {

@@ -2,7 +2,7 @@ using Features.Score;
 using Microsoft.EntityFrameworkCore;
 using Data;
 
-public class ScoreRepository : GenericRepository<ScoreEntity>, IScoreRepository
+public class ScoreRepository : GenericRepository<ScoreEntity, Guid>, IScoreRepository
 {
     public ScoreRepository(AppDbContext context) : base(context)
     {

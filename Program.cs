@@ -33,7 +33,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IScoreService, ScoreService>();
+<<<<<<< HEAD
 builder.Services.AddScoped<IAudioServices, AudioServices>();
+=======
+builder.Services.AddScoped<IScoreRepository, ScoreRepository>();
+
+>>>>>>> remotes/origin/login
 
 var app = builder.Build();
 

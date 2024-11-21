@@ -64,10 +64,16 @@ public class UserController : ControllerBase
             bool action = await _userService.UpdateUserGoldXp(guid, addGold, addXp);
 
             // TO-DO, add rank-up check, if xp exceeds next rank-up xp then user is promoted.
-            if (user is not null)
+            if (action)
             {
-                return Ok(new { message = $"Gold {beforeGold} -> {user.Gold}, XP {beforeXp} -> {user.XP}" });
+                user = await _userService.GetUserAsync(guid);
+                if (user is not null)
+                {
+                    return Ok(new { message = $"Gold {beforeGold} -> {user.Gold}, XP {beforeXp} -> {user.XP}" });
+                }
             }
+
+
         }
 
         return NotFound();

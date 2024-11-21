@@ -29,7 +29,9 @@ public class UserService : IUserService
             GoogleId = user.GoogleId,
             Email = user.Email,
             DisplayName = user.DisplayName,
-            PublicRank = user.Rank
+            PublicRank = user.Rank,
+            XP = user.XP,
+            Gold = user.Gold
         }).ToList();
     }
 
